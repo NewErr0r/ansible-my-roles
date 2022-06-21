@@ -26,22 +26,44 @@
         enabled: yes 
   when: ansible_os_family == "Debian"
 
-- name: Generate INDEX.HTML file
-  template: src=index.j2 dest={{ destin_folder }}/index.html mode=0555
-  notify: 
-    - Restart Nginx RedHat
-    - Restart Nginx Debian
+- block: #=======Block for DEBIAN=======
+  - name: Generate INDEX.HTML file for Debian
+    template: src=index.j2 dest={{ destin_folder_debian }}/index.html mode=0555
+    notify: 
+      - Restart Nginx RedHat
+      - Restart Nginx Debian
 
-- name: Copy HomePage file to Web Server
-  copy: src={{ item }} dest={{ destin_folder }} mode=0555
-  loop:
-    - "marian.webp"
-    - "oceans.jpg"
-    - "oceans.jpg"
-    - "puerto.jpg"
-    - "script.js"
-    - "style.css"
-  notify: 
-    - Restart Nginx RedHat
-    - Restart Nginx Debian
-    
+  - name: Copy HomePage file to Web Server
+    copy: src={{ item }} dest={{ destin_folder_debian }} mode=0555
+    loop:
+      - "marian.webp"
+      - "oceans.jpg"
+      - "oceans.jpg"
+      - "puerto.jpg"
+      - "script.js"
+      - "style.css"
+    notify: 
+      - Restart Nginx RedHat
+      - Restart Nginx Debian
+  when: ansible_os_family == "Debian"
+
+- block: #=======Block for REDHAT=======
+  - name: Generate INDEX.HTML file for CentOS
+    template: src=index.j2 dest={{ destin_folder_centos }}/index.html mode=0555
+    notify: 
+      - Restart Nginx RedHat
+      - Restart Nginx Debian
+
+  - name: Copy HomePage file to Web Server
+    copy: src={{ item }} dest={{ destin_folder_centos }} mode=0555
+    loop:
+      - "marian.webp"
+      - "oceans.jpg"
+      - "oceans.jpg"
+      - "puerto.jpg"
+      - "script.js"
+      - "style.css"
+    notify: 
+      - Restart Nginx RedHat
+      - Restart Nginx Debian
+  when: ansible_os_family == "RedHat"
