@@ -1,0 +1,12 @@
+---
+- name: Restart Nginx RedHat
+  service:
+    name: nginx 
+    state: restarted
+  when: ansible_os_family == "RedHat"
+
+- name: Restart Nginx Debian
+  service:
+    name: nginx 
+    state: restarted
+  when: ansible_os_family == "Debian"

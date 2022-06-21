@@ -1,0 +1,11 @@
+html, body{height: 100%;}
+body{display: flex;}
+article{flex: 1 1 auto;}
+table{margin: 20px;
+    border: 1px solid tomato;
+    align-items: center;
+   
+    width: 95%; height: 200px;}
+    tr,th,td{border: 1px solid violet;}
+    #pokaz{margin: 20px auto;
+    text-align: center;}

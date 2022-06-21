@@ -1,0 +1,47 @@
+---
+
+- block: #=======Block for REDHAT=======
+    - name: Install Nginx Web Server for RedHat 
+      yum: 
+        name: nginx 
+        state: latest
+    
+    - name: Start Web Server service for RedHat
+      service:
+        name: nginx
+        state: started
+        enabled: yes 
+  when: ansible_os_family == "RedHat"
+
+- block: #=======Block for DEBIAN=======
+    - name: Install Nginx Web Server for Debian 
+      apt: 
+        name: nginx 
+        state: latest
+    
+    - name: Start Web Server service for Debian
+      service:
+        name: nginx
+        state: started
+        enabled: yes 
+  when: ansible_os_family == "Debian"
+
+- name: Generate INDEX.HTML file
+  template: src=index.j2 dest={{ destin_folder }}/index.html mode=0555
+  notify: 
+    - Restart Nginx RedHat
+    - Restart Nginx Debian
+
+- name: Copy HomePage file to Web Server
+  copy: src={{ item }} dest={{ destin_folder }} mode=0555
+  loop:
+    - "marian.webp"
+    - "oceans.jpg"
+    - "oceans.jpg"
+    - "puerto.jpg"
+    - "script.js"
+    - "style.css"
+  notify: 
+    - Restart Nginx RedHat
+    - Restart Nginx Debian
+    

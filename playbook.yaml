@@ -1,0 +1,7 @@
+---
+- name: Install Nginx and settings Web Server
+  hosts: all
+  become: yes
+
+  roles:
+    - { role: deploy_nginx_web, when: ansible_system == "Linux" }
