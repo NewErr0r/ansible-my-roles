@@ -1,0 +1,8 @@
+---
+db_name: testdb
+db_user: myuser
+db_password: P@ssw0rd
+destin_folder_debian_postgresql: /etc/postgresql/13/main/postgresql.conf
+destin_folder_debian_pg_nba: /etc/postgresql/13/main/pg_hba.conf
+destin_folder_centos_postgresql: /var/lib/pgsql/data/postgresql.conf
+destin_folder_centos_pg_nba: /var/lib/pgsql/data/pg_hba.conf 

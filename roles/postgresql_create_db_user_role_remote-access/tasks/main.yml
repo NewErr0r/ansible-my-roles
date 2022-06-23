@@ -1,0 +1,63 @@
+---
+  - block: #=======Block for REDHAT=======
+    - name: Utility present for CentOS
+      yum: 
+        name: python3-psycopg2
+        state: present
+    when: ansible_os_family == "RedHat"
+
+  - block: #=======Block for Debian=======
+    - name: Utility present for Debian
+      apt: 
+        name: python3-psycopg2
+        state: present
+    when: ansible_os_family == "Debian"   
+
+  - name: Create DataBase
+    community.postgresql.postgresql_db:
+      state: present
+      name: "{{ db_name }}"
+    become: true
+    become_user: postgres
+
+  - name: Create db user 
+    community.postgresql.postgresql_user:
+      state: present
+      name: "{{ db_user }}"
+      password: "{{ db_password }}"
+    become: true
+    become_user: postgres
+
+  - name: Grant db user access to db 
+    community.postgresql.postgresql_privs:
+      type: database 
+      database: "{{ db_name }}"
+      roles: "{{ db_user }}" 
+      privs: all 
+      grant_option: false 
+    become: true 
+    become_user: postgres
+
+  - block: #=======Block for DEBIAN for Remote access=======
+    - name: Generate postgresql.conf file for Debian
+      template: src=debian_postgresql.j2 dest={{ destin_folder_debian_postgresql }}
+      notify: 
+        - Restart postgresql Debian
+
+    - name: Generate pg_hba.conf file for Debian
+      template: src=debian_pg_hba.j2 dest={{ destin_folder_debian_pg_nba }}
+      notify: 
+        - Restart postgresql Debian
+    when: ansible_os_family == "Debian"
+
+  - block: #=======Block for REDHAT for Remote access=======
+    - name: Generate postgresql.conf file for CentOS
+      template: src=centos_postgresql.j2 dest={{ destin_folder_centos_postgresql }}
+      notify: 
+        - Restart postgresql Debian
+
+    - name: Generate pg_hba.conf file for CentOS
+      template: src=centos_pg_hba.j2 dest={{ destin_folder_centos_pg_nba }}
+      notify: 
+        - Restart postgresql RedHat
+    when: ansible_os_family == "RedHat"

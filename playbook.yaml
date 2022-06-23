@@ -6,4 +6,5 @@
   roles:
     #- { role: deploy_nginx_web, when: ansible_system == "Linux" }
     #- deploy_docker
-    - deploy_postgresql
+    #- deploy_postgresql
+    - postgresql_create_db_user_role_remote-access
