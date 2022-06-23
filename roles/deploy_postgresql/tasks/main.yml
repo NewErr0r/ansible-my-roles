@@ -1,0 +1,18 @@
+---
+  - block: #=======Block for REDHAT=======
+    - name: Install packeges
+      yum:
+        name: 
+          - postgresql
+          - postgresql-server
+        state: present
+
+    - name: Check if PostgreSQL is instialized
+      stat: 
+        path: "/var/lib/pgsql/data/pg_hba.conf"
+      register: postgres_data
+
+    - name: Initialize PostgreSQL
+      shell: "postgresql-setup initdb"
+      when: not postgres_data.stat.exists
+    when: ansible_os_family == "RedHat"

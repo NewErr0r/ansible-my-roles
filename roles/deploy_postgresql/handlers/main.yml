@@ -1,0 +1,7 @@
+---
+- name: Start and enable Service
+  service: 
+    name: postgresql
+    state: started
+    enabled: True
+  when: ansible_os_family == "RedHat"
