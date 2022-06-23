@@ -1,7 +1,14 @@
 ---
-- name: Start and enable Service
+- name: Start and enable Service for CentOS
   service: 
     name: postgresql
     state: started
     enabled: True
   when: ansible_os_family == "RedHat"
+
+- name: Start and enable service for Debian 
+  service: 
+    name: postgresql
+    state: started
+    enabled: true
+  when: ansible_os_family == "Debian"

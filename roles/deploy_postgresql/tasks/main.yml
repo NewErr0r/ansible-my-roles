@@ -1,18 +1,39 @@
 ---
   - block: #=======Block for REDHAT=======
-    - name: Install packeges
+    - name: Install packeges for CentOS
       yum:
         name: 
           - postgresql
           - postgresql-server
         state: present
 
-    - name: Check if PostgreSQL is instialized
+    - name: Check if PostgreSQL is instialized for CentOS
       stat: 
         path: "/var/lib/pgsql/data/pg_hba.conf"
       register: postgres_data
 
-    - name: Initialize PostgreSQL
+    - name: Initialize PostgreSQL for CentOS
       shell: "postgresql-setup initdb"
       when: not postgres_data.stat.exists
     when: ansible_os_family == "RedHat"
+
+  - block: #=======Block for Debian=======
+    - name: Install packeges for Debian
+      apt:
+        name: 
+          - postgresql
+          - postgresql-contrib
+          - libpq-dev
+          - python3-psycopg2
+        state: present
+      
+    - name: Check if PostgreSQL is instialized for Debian
+      stat: 
+        path: "{{ postgresql_data_dir }}/pg_hba.conf"
+      register: postgres_data
+
+#- name: Initialize PostgreSQL
+   #shell: "{{ postgresql_bin_path }}/initdb -D {{ postgresql_data_dir }}"
+    #become_user: postgres 
+    #when: not postgres_data.stat.exists
+    when: ansible_os_family == "Debian"
