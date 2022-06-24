@@ -6,6 +6,8 @@
           - postgresql
           - postgresql-server
         state: present
+      notify:
+        - Start and enable Service for CentOS
 
     - name: Check if PostgreSQL is instialized for CentOS
       stat: 
@@ -26,6 +28,8 @@
           - libpq-dev
           - python3-psycopg2
         state: present
+      notify:
+        - Start and enable service for Debian 
       
     - name: Check if PostgreSQL is instialized for Debian
       stat: 

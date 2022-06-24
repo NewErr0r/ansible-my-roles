@@ -1,5 +1,5 @@
 ---
-- name: Install Nginx and settings Web Server
+- name: Roles
   hosts: all
   become: yes
 
