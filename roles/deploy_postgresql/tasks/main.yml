@@ -27,6 +27,7 @@
           - postgresql-contrib
           - libpq-dev
           - python3-psycopg2
+          - sudo
         state: present
       notify:
         - Start and enable service for Debian 
