@@ -1,0 +1,129 @@
+---
+- name: Deploy Zabbix Server in CentOS
+  hosts: CentOS 
+  become: true
+
+  vars: 
+    db_name: zabbix
+    db_user: zabbix
+    db_password: P@ssw0rd
+    destin_folder_centos_postgresql: /var/lib/pgsql/data/postgresql.conf
+    destin_folder_centos_pg_nba: /var/lib/pgsql/data/pg_hba.conf
+    destin_folder_centos_php_ini: /etc/php.ini
+  tasks:
+    - name: Configure Firewalld
+      firewalld:
+        port: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop: 
+        - "80/tcp"
+        - "443/tcp"
+        - "10051/tcp"
+        - "10050/tcp"
+        - "10051/udp"
+        - "10050/udp"
+        - "5432/tcp"
+      notify: 
+        - Restart Firewalld
+  
+    - name: Install packeges for PostgreSQL
+      yum:
+        name: 
+          - postgresql
+          - postgresql-server
+          - python3-psycopg2
+        state: present
+      notify:
+        - Start and enable Service 
+
+    - name: Check if PostgreSQL is instialized 
+      stat: 
+        path: "/var/lib/pgsql/data/pg_hba.conf"
+      register: postgres_data
+
+    - name: Initialize PostgreSQL 
+      shell: "postgresql-setup initdb"
+      when: not postgres_data.stat.exists
+
+    - name: Create DataBase
+      community.postgresql.postgresql_db:
+        state: present
+        name: "{{ db_name }}"
+      become: true
+      become_user: postgres
+
+    - name: Create db user 
+      community.postgresql.postgresql_user:
+        state: present
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+      become: true
+      become_user: postgres
+
+    - name: Grant db user access to db 
+      community.postgresql.postgresql_privs:
+        type: database 
+        database: "{{ db_name }}"
+        roles: "{{ db_user }}" 
+        privs: all 
+        grant_option: false 
+      become: true 
+      become_user: postgres
+
+    - name: Generate postgresql.conf file 
+      template: src=centos_postgresql.j2 dest={{ destin_folder_centos_postgresql }}
+      notify: 
+        - Restart postgresql Debian
+
+    - name: Generate pg_hba.conf file 
+      template: src=centos_pg_hba.j2 dest={{ destin_folder_centos_pg_nba }}
+      notify: 
+        - Restart postgresql RedHat
+
+    - name: Install php and php-fpm
+      yum:
+        name: 
+          - php
+          - php-fpm
+          
+    - name: Generate php.ini file 
+      template: src=php.j2 dest={{ destin_folder_centos_php_ini }}
+      notify: 
+        - Restart php-fpm
+
+    - name: Install Nginx
+      yum: 
+        name: nginx
+        state: latest
+      notify: 
+        - Start and enable nginx 
+
+ 
+ 
+  handlers:
+    - name: Restart Firewall 
+      service:
+        name: firewalld  
+        state: restarted
+
+    - name: Start and enable Service 
+      service:
+        name: postgresql
+        state: restarted
+
+    - name: Restart postgresql RedHat  
+      service:
+        name: postgresql
+        state: restarted
+
+    - name: Restart php-fpm
+      service:
+        name: php-fpm
+        state: restarted
+
+    - name: Start and enable nginx 
+      service:
+        name: php-fpm
+        state: started
+        enabled: true
