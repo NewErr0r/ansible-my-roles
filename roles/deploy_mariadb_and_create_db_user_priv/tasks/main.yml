@@ -1,0 +1,94 @@
+---
+  - block: #=======Block for REDHAT=======
+    - name: Configure Firewalld for CentOS
+      firewalld:
+        port: "3306/tcp"
+        permanent: true
+        state: enabled
+      notify:
+        - Restart Firewalld
+
+    - name: Install packeges for CentOS
+      yum: 
+        name: 
+          - mariadb-server
+          - python3-PyMySQL
+        state: latest
+      notify:
+        - Start MariaDB for CentOS
+
+    - name: Configurations root password for MariaDB for CentOS
+      mysql_user:
+        check_implicit_admin: true
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+        user: root 
+        password: "{{ mysql_root_password }}"
+        host: localhost 
+
+    - name: Generate mariadb-server.cnf file for CentOS
+      template: src=mariadb-server.cnf.j2 dest={{ destin_folder_centos_mariadb_server_cnf }}
+      notify: 
+        - Restart MariaDB for CentOS
+
+    - name: Create DB for CentOS
+      community.mysql.mysql_db:
+        name: "{{ mysql_create_database }}"
+        encoding: utf8
+        collation: utf8_bin
+        state: present
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create User for CentOS
+      community.mysql.mysql_user:
+        name: "{{ mysql_create_user }}"
+        password: "{{ mysql_user_password }}"
+        priv: '*.*:ALL,GRANT'
+        host: '%'
+        state: present
+        login_user: "{{ mysql_login_user }}"
+        login_password: "{{ mysql_root_password }}"
+    when: ansible_os_family == "RedHat"
+
+  - block: #=======Block for Debian=======
+    - name: Update the apt package index for Debian 
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        force_apt_get: yes
+
+    - name: Install packeges for Debian 
+      apt: 
+        name: 
+          - mariadb-server
+          - python3-pymysql
+        state: latest
+      notify:
+        - Start MariaDB for Debian
+
+    - name: Generate mariadb-server.cnf file for Debian 
+      template: src=50-server.cnf.j2 dest={{ destin_folder_debian_mariadb_server_cnf }}
+      notify: 
+        - Restart MariaDB for Debian
+      
+    - name: Create DB for Debian 
+      community.mysql.mysql_db:
+        name: "{{ mysql_create_database }}"
+        encoding: utf8
+        collation: utf8_bin
+        state: present
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create User for Debian 
+      community.mysql.mysql_user:
+        name: "{{ mysql_create_user }}"
+        password: "{{ mysql_user_password }}"
+        priv: '*.*:ALL,GRANT'
+        host: '%'
+        state: present
+        login_user: "{{ mysql_login_user }}"
+        login_password: "{{ mysql_root_password }}"
+    when: ansible_os_family == "Debian"

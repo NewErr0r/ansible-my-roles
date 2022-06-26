@@ -20,6 +20,13 @@
     when: ansible_os_family == "RedHat"
 
   - block: #=======Block for Debian=======
+    - name: Update the apt package index
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+        force_apt_get: yes    
+    
     - name: Install packeges for Debian
       apt:
         name: 

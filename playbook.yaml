@@ -7,4 +7,5 @@
     #- { role: deploy_nginx_web, when: ansible_system == "Linux" }
     #- deploy_docker
     #- deploy_postgresql
-    - postgresql_create_db_user_role_remote-access
+    #- postgresql_create_db_user_role_remote-access
+    - deploy_mariadb_and_create_db_user_priv

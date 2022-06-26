@@ -1,0 +1,8 @@
+---
+mysql_root_password: "P@ssw0rd"
+mysql_create_database: "test_db"
+mysql_create_user: "test_user"
+mysql_user_password: "P@ssw0rd"
+mysql_login_user: "root"
+destin_folder_centos_mariadb_server_cnf: /etc/my.cnf.d/mariadb-server.cnf
+destin_folder_debian_mariadb_server_cnf: /etc/mysql/mariadb.conf.d/50-server.cnf

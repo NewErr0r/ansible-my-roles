@@ -1,0 +1,27 @@
+---
+- name: Start MariaDB for CentOS
+  service: 
+    name: mariadb
+    enabled: true 
+    state: started
+
+- name: Restart MariaDB for CentOS
+  service: 
+    name: mariadb
+    state: restarted
+
+- name: Restart Firewalld
+  service: 
+    name: firewalld 
+    state: restarted 
+
+- name: Start MariaDB for Debian 
+  service: 
+    name: mariadb
+    enabled: true 
+    state: started
+
+- name: Restart MariaDB for Debian
+  service: 
+    name: mariadb
+    state: restarted
