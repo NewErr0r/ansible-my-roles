@@ -140,6 +140,7 @@
       service:
         name: postgresql
         state: restarted
+        enabled: yes
 
     - name: Restart postgresql RedHat  
       service:
@@ -150,12 +151,13 @@
       service:
         name: php-fpm
         state: restarted
+        enabled: yes 
 
     - name: Start and enable nginx 
       service:
         name: php-fpm
         state: started
-        enabled: true
+        enabled: yes
 
     - name: Restart nginx
       service:
@@ -166,4 +168,4 @@
       service:
         name: zabbix-server 
         state: restarted 
-        enabled: true
+        enabled: yes 

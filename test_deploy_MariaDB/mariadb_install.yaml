@@ -1,0 +1,82 @@
+---
+- name: Install MariaDB for CentOS 
+  hosts: CentOS
+  become: yes  
+  
+  vars:
+    mysql_root_password: "P@ssw0rd"
+    mysql_create_database: "zabbix"
+    mysql_create_user: "zabbix"
+    mysql_login_user: "root"
+    destin_folder_centos_mariadb_server_cnf: /etc/my.cnf.d/mariadb-server.cnf
+  
+  tasks:
+    - name: Configure Firewalld
+      firewalld:
+        port: "3306/tcp"
+        permanent: true
+        state: enabled
+      notify:
+        - Restart Firewalld
+
+    - name: Install packeges
+      yum: 
+        name: 
+          - mariadb-server
+          - python3-PyMySQL
+        state: latest
+      notify:
+        - Start MariaDB 
+
+    - name: Configurations root password for MariaDB
+      mysql_user:
+        check_implicit_admin: true
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+        user: root 
+        password: "{{ mysql_root_password }}"
+        host: localhost 
+
+    - name: Generate mariadb-server.cnf file 
+      template: src=mariadb-server.cnf.j2 dest={{ destin_folder_centos_mariadb_server_cnf }}
+      notify: 
+        - Restart MariaDB
+
+    - name: Create DB 
+      community.mysql.mysql_db:
+        name: "{{ mysql_create_database }}"
+        encoding: utf8
+        collation: utf8_bin
+        state: present
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+
+    - name: Create User 
+      community.mysql.mysql_user:
+        name: "{{ mysql_create_user }}"
+        password: "{{ mysql_root_password }}"
+        priv: '*.*:ALL,GRANT'
+        host: '%'
+        state: present
+        login_user: "{{ mysql_login_user }}"
+        login_password: "{{ mysql_root_password }}"
+
+    
+
+  
+  handlers:    
+    - name: Start MariaDB 
+      service: 
+        name: mariadb
+        enabled: true 
+        state: started
+
+    - name: Restart MariaDB
+      service: 
+        name: mariadb
+        state: restarted
+
+    - name: Restart Firewalld
+      service: 
+        name: firewalld 
+        state: restarted 
