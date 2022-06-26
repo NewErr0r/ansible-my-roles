@@ -4,14 +4,16 @@
   become: true
 
   vars: 
-    db_name: zabbix
-    db_user: zabbix
-    db_password: P@ssw0rd
-    destin_folder_centos_postgresql: /var/lib/pgsql/data/postgresql.conf
-    destin_folder_centos_pg_nba: /var/lib/pgsql/data/pg_hba.conf
-    destin_folder_centos_php_ini: /etc/php.ini
-    destin_folder_centos_ngix_conf: /etc/nginx/nginx.conf
-    destin_folder_centos_zabbix_server_conf: /etc/zabbix/zabbix_server.conf
+    mysql_login_user: "root"
+    mysql_root_password: "P@ssw0rd"
+    mysql_create_database: "zabbix"
+    mysql_create_user: "zabbix"
+    mysql_user_password: "P@ssw0rd"
+    destin_folder_centos_mariadb_server_cnf: /etc/my.cnf.d/mariadb-server.cnf
+    destin_folder_import_db_zabbix: /usr/share/doc/zabbix-server-mysql/create.sql
+    destin_folder_php_ini: /etc/php.ini
+    destin_folder_nginx_conf: /etc/nginx/nginx.conf
+    destin_dolder_zabbix_server_conf: /etc/zabbix/zabbix_server.conf    
 
   tasks:
     - name: Configure Firewalld
@@ -26,86 +28,54 @@
         - "10050/tcp"
         - "10051/udp"
         - "10050/udp"
-        - "5432/tcp"
+        - "3306/tcp"
       notify: 
         - Restart Firewalld
-  
-    - name: Install packeges for PostgreSQL
-      yum:
+
+    - name: Disable SELinux
+      selinux:
+        state: disabled
+
+    - name: Install packeges for MariaDB
+      yum: 
         name: 
-          - postgresql
-          - postgresql-server
-          - python3-psycopg2
-        state: present
+          - mariadb-server
+          - python3-PyMySQL
+        state: latest
       notify:
-        - Start and enable Service 
+        - Start MariaDB for CentOS
 
-    - name: Check if PostgreSQL is instialized 
-      stat: 
-        path: "/var/lib/pgsql/data/pg_hba.conf"
-      register: postgres_data
+    - name: Configurations root password for MariaDB for CentOS
+      mysql_user:
+        check_implicit_admin: true
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+        user: root 
+        password: "{{ mysql_root_password }}"
+        host: localhost
 
-    - name: Initialize PostgreSQL 
-      shell: "postgresql-setup initdb"
-      when: not postgres_data.stat.exists
+    - name: Install Nginx
+      yum: 
+        name: nginx 
+        state: latest
 
-    - name: Create DataBase
-      community.postgresql.postgresql_db:
-        state: present
-        name: "{{ db_name }}"
-      become: true
-      become_user: postgres
-
-    - name: Create db user 
-      community.postgresql.postgresql_user:
-        state: present
-        name: "{{ db_user }}"
-        password: "{{ db_password }}"
-      become: true
-      become_user: postgres
-
-    - name: Grant db user access to db 
-      community.postgresql.postgresql_privs:
-        type: database 
-        database: "{{ db_name }}"
-        roles: "{{ db_user }}" 
-        privs: all 
-        grant_option: false 
-      become: true 
-      become_user: postgres
-
-    - name: Generate postgresql.conf file 
-      template: src=centos_postgresql.j2 dest={{ destin_folder_centos_postgresql }}
-      notify: 
-        - Restart postgresql Debian
-
-    - name: Generate pg_hba.conf file 
-      template: src=centos_pg_hba.j2 dest={{ destin_folder_centos_pg_nba }}
-      notify: 
-        - Restart postgresql RedHat
-
-    - name: Install php and php-fpm
+    - name: Install php
       yum:
         name: 
           - php
           - php-fpm
-          
-    - name: Generate php.ini file 
-      template: src=php.j2 dest={{ destin_folder_centos_php_ini }}
-      notify: 
-        - Restart php-fpm
-
-    - name: Install Nginx
-      yum: 
-        name: nginx
+          - php-mysqli
         state: latest
-      notify: 
-        - Start and enable nginx 
 
-    - name: Generate nginx.conf file 
-      template: src=nginx.j2 dest={{ destin_folder_centos_ngix_conf }}
+    - name: Generate php.ini file 
+      template: src=php.ini.j2 dest={{ destin_folder_php_ini }}
       notify: 
-        - Restart nginx
+        - Start and Enable php-fpm
+
+    - name: Generate nginx.conf file  
+      template: src=nginx.conf.j2 dest={{ destin_folder_nginx_conf }}
+      notify:
+        - Start and Enable Nginx
 
     - name: Install the Zabbix rpm from a remote repo
       dnf: 
@@ -115,57 +85,80 @@
     - name: Install packeges for Zabbix-Server
       yum: 
         name: 
-          - zabbix-server-pgsql 
-          - zabbix-web-pgsql
+          - zabbix-server-mysql 
+          - zabbix-web-mysql
           - zabbix-agent
+          - zabbix-get 
         state: latest 
 
-    - name: Application of a ready-made database schema
-      command: bash -c "zcat /usr/share/doc/zabbix-server-pgsql*/create.sql.gz | sudo -u zabbix psql zabbix"
+    - name: Generate mariadb-server.cnf file for CentOS
+      template: src=mariadb-server.cnf.j2 dest={{ destin_folder_centos_mariadb_server_cnf }}
+      notify: 
+        - Restart MariaDB for CentOS
+
+    - name: Extract create.sql.gz
+      command: bash -c "gunzip /usr/share/doc/zabbix-server-mysql/create.sql.gz"
+      ignore_errors: yes
+
+    - name: Create DB for Zabbix
+      community.mysql.mysql_db:
+        name: "{{ mysql_create_database }}"
+        encoding: utf8
+        collation: utf8_bin
+        target: "{{ destin_folder_import_db_zabbix }}"
+        state: import
+        login_user: "{{ mysql_login_user }}" 
+        login_password: "{{ mysql_root_password }}"
+      failed_when: false 
+
+    - name: Create User for Zabbix
+      community.mysql.mysql_user:
+        name: "{{ mysql_create_user }}"
+        password: "{{ mysql_user_password }}"
+        priv: '*.*:ALL,GRANT'
+        host: '%'
+        state: present
+        login_user: "{{ mysql_login_user }}"
+        login_password: "{{ mysql_root_password }}"
 
     - name: Generate zabbix_server.conf file 
-      template: src=zabbix_server.j2 dest={{ destin_folder_centos_zabbix_server_conf }}
-      notify: 
-        - Start and enable Zabbix-Server
-        - Restart nginx
+      template: src=zabbix_server.conf.j2 dest={{ destin_dolder_zabbix_server_conf }}
+      notify:
+        - Start and Enable Zabbix-Server
 
 
   handlers:
-    - name: Restart Firewall 
+    - name: Restart Firewalld
       service:
         name: firewalld  
         state: restarted
 
-    - name: Start and enable Service 
-      service:
-        name: postgresql
-        state: restarted
-        enabled: yes
-
-    - name: Restart postgresql RedHat  
-      service:
-        name: postgresql
-        state: restarted
-
-    - name: Restart php-fpm
-      service:
-        name: php-fpm
-        state: restarted
-        enabled: yes 
-
-    - name: Start and enable nginx 
-      service:
-        name: php-fpm
+    - name: Start MariaDB for CentOS
+      service: 
+        name: mariadb
+        enabled: true 
         state: started
-        enabled: yes
 
-    - name: Restart nginx
-      service:
-        name: nginx
+    - name: Restart MariaDB for CentOS
+      service: 
+        name: mariadb
         state: restarted
 
-    - name: Start and enable Zabbix-Server
+    - name: Start and Enable Nginx
+      service: 
+        name: nginx 
+        enabled: true
+        state: restarted
+
+    - name: Start and Enable php-fpm
+      service: 
+        name: php-fpm
+        enabled: true
+        state: started
+    
+    - name: Start and Enable Zabbix-Server
       service:
-        name: zabbix-server 
-        state: restarted 
-        enabled: yes 
+        name: zabbix-server
+        enabled: true 
+        state: restarted
+
